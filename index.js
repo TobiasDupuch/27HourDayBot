@@ -7,13 +7,42 @@ const bot = new TelegramBot("638772528:AAGwE_YJgegWUEnO1_sn-nCB5qmqnVVx8As", {
   polling: true
 });
 
+// opts = {
+//   reply_markup: JSON.stringify({
+//     // one_time_keyboard: true,
+//     // hide_keyboard: true,
+//     keyboard: [
+//       ['Yes, you are the bot of my life '],
+//       ['No, sorry there is another one...']
+//     ]
+//   })
+// }
+
+// const keyBoardHide = {
+//   reply_markup: JSON.stringify({
+//     hide_keyboard: true,
+//   })
+// }
+// const keyBoardNumbers = {
+//   reply_markup: JSON.stringify({
+//     one_time_keyboard: true,
+//     // hide_keyboard: true,
+//     keyboard: [
+//       ['7', '8', '9'],
+//       ['4', '5', '6'],
+//       ['1', '2', '3'],
+//       ['0']
+//     ]
+//   })
+// }
+
 console.log("BOT RUNNING")
 
 
 //sheduled jobs
-// var cronJobTest = schedule.scheduleJob('*/1 * * * *', function(){
-//   bot.sendMessage(682973818, "CRON TEST2");
-// });
+const cronJobTest = schedule.scheduleJob('* * */1 * *', function(){
+  bot.sendMessage(682973818, "Time to log something. Type 'log'.");
+});
 
 
 bot.on('message', (msg) => {
@@ -85,24 +114,27 @@ function handleDialog(user, msg) {
       user.logging = false;
       saveToUser(user);
       console.log("USER MANUALLY ENDED LOGGING MODE");
-      bot.sendMessage(user.id,"Ok. To log something just type 'log'");
+      bot.sendMessage(user.id, "Ok. Remember: to log something just type 'log' first.");
 
 
     } else {
-      user.log.push({"timestamp":new Date().getTime(),"entry":msg.text});
+      user.log.push({
+        "timestamp": new Date().getTime(),
+        "entry": msg.text
+      });
       user.logging = false;
       saveToUser(user);
-      console.log("USER LOGGED MESSAGE: "+msg.text);
-      bot.sendMessage(user.id,"We logged that. Thanks");
+      console.log("USER LOGGED MESSAGE: " + msg.text);
+      bot.sendMessage(user.id, "We logged that. Thanks");
 
     }
 
-  } else if (msg.text == "log") {
+  } else if (msg.text == "log" || msg.text == "Log") {
     console.log("USER ACTIVATED LOGGING MODE");
     user.logging = true;
     saveToUser(user);
 
-    bot.sendMessage(user.id, "Logbucheintrag für XX:XX");
+    bot.sendMessage(user.id, "What would you like to log?");
 
   } else {
     console.log("SENDING MESSAGE FOR STEP: " + user.step + "...");
@@ -123,7 +155,7 @@ function handleDialog(user, msg) {
         user.name = msg.text;
         user.step++;
         saveToUser(user);
-        bot.sendMessage(user.id, "Ok, " + user.name + " What's your age?");
+        bot.sendMessage(user.id, "Ok, " + user.name + " What's your age?",);
         break;
 
       case 3:
