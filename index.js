@@ -40,7 +40,7 @@ console.log("BOT RUNNING")
 
 
 //sheduled jobs
-const cronJobTest = schedule.scheduleJob('* * */1 * *', function(){
+const cronJobTest = schedule.scheduleJob('0 * * * *', function(){
   bot.sendMessage(682973818, "Time to log something. Type 'log'.");
 });
 
