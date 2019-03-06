@@ -4,12 +4,14 @@ const schedule = require('node-schedule');
 
 var bot;
 
-const telegramKey = fs.readFile("apiKey.txt", "utf8", function(err, data) {
+var telegramKey = fs.readFile("apiKey.txt", "utf8", function(err, data) {
   if (err) throw err;
   const tgKey = data;
   bot = new TelegramBot(tgKey, {
     polling: true
   });
+telegramKey = telegramKey.slice(0, -1);
+
 
   //sheduled jobs
   const cronJobTest = schedule.scheduleJob('0 * * * *', function() {
@@ -98,7 +100,6 @@ const keyBoardBedtime = {
   })
 }
 
-console.log("BOT RUNNING")
 
 
 
