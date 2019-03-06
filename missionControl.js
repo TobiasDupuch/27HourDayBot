@@ -28,9 +28,17 @@ function notifyMe(sender, text) {
   if (sender != "682973818") {
     bot.sendMessage("682973818", "RECEIVED: " + text + " FROM: " + sender);
   } else {
-    let target = text.split("/")[0];
-    let messageToSend = text.split("/")[1];
-    bot.sendMessage(target, messageToSend);
-    console.log("SENDING: " + messageToSend + " TO " + target);
+    if (text == "/test") {
+      bot.sendMessage("682973818", "SERVER IS UP AND RUNNING");
+    } else {
+      let target = text.split("/")[0];
+      let messageToSend = text.split("/")[1];
+      bot.sendMessage(target, messageToSend).catch((error) => {
+        bot.sendMessage("682973818", "ERROR: "+error.code+" "+JSON.stringify(error.response.body));
+        console.log(error.code); // => 'ETELEGRAM'
+        console.log(error.response.body); // => { ok: false, error_code: 400, description: 'Bad Request: chat not found' }
+      });
+      console.log("SENDING: " + messageToSend + " TO " + target);
+    }
   }
 }
