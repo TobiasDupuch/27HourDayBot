@@ -2,10 +2,59 @@ const TelegramBot = require('node-telegram-bot-api');
 const fs = require("fs");
 const schedule = require('node-schedule');
 
+var bot;
 
-const bot = new TelegramBot("638772528:AAGwE_YJgegWUEnO1_sn-nCB5qmqnVVx8As", {
-  polling: true
+const telegramKey = fs.readFile("apiKey.txt", "utf8", function(err, data) {
+  if (err) throw err;
+  const tgKey = data;
+  bot = new TelegramBot(tgKey, {
+    polling: true
+  });
+
+  //sheduled jobs
+  const cronJobTest = schedule.scheduleJob('0 * * * *', function() {
+    bot.sendMessage(682973818, "Time to log something. Type 'log'.");
+  });
+
+  const cronJobBeforeBedtime = schedule.scheduleJob('*/30 * * * *', function() {
+    //check if somebodies bedtime is up.
+    //make hour and minute from time
+    let dateNow = new Date();
+    let hourNow = addZero(dateNow.getHours());
+    let minuteNow = addZero(dateNow.getMinutes());
+    let timeNow = hourNow+":"+minuteNow;
+    console.log("CHECKING BEDTIMES FOR: "+timeNow);
+
+    fs.readFile("data/allusers.json", function(err, data) {
+        if (err) throw err;
+        console.log("ALLUSERS.JSON LOADED FOR CRON JOBS:");
+        let allUsers = (JSON.parse(data));
+        for (var i = 0; i < allUsers.users.length; i++) {
+          if (allUsers.users[i] == timeNow) {
+            bot.sendMessage(allUsers.users[i], "Good Night?'.");
+          }
+////CHECK USER FILE NOT ALL USERS, STUPID!
+        }
+      });
+
+
+
+  });
+
+
+  bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    console.log("INCOMING MESSAGE: ");
+    console.log(msg);
+
+    //check if user exists if not, create.
+
+    checkUser(chatId, msg);
+
+  });
 });
+
+
 
 // opts = {
 //   reply_markup: JSON.stringify({
@@ -36,25 +85,23 @@ const bot = new TelegramBot("638772528:AAGwE_YJgegWUEnO1_sn-nCB5qmqnVVx8As", {
 //   })
 // }
 
+const keyBoardBedtime = {
+  reply_markup: JSON.stringify({
+    one_time_keyboard: true,
+    // hide_keyboard: true,
+    keyboard: [
+      ['21:30',"22:00"],
+      ['22:30',"23:00"],
+      ['23:30',"00:00"],
+      ['00:30',"01:00"]
+    ]
+  })
+}
+
 console.log("BOT RUNNING")
 
 
-//sheduled jobs
-const cronJobTest = schedule.scheduleJob('0 * * * *', function(){
-  bot.sendMessage(682973818, "Time to log something. Type 'log'.");
-});
 
-
-bot.on('message', (msg) => {
-  const chatId = msg.chat.id;
-  console.log("INCOMING MESSAGE: ");
-  console.log(msg);
-
-  //check if user exists if not, create.
-
-  checkUser(chatId, msg);
-
-});
 
 
 function checkUser(chatId, msg) {
@@ -72,15 +119,18 @@ function checkUser(chatId, msg) {
           console.log("CREATING INITIAL USER FILE...");
           const initUser = {
             "id": chatId,
+            "created": Date.now(),
             "step": 0,
             "logging": false,
-            "log": []
+            "log": [],
           };
           fs.writeFile("data/" + chatId.toString() + "/user.json", JSON.stringify(initUser), function(err) {
             if (err) throw err;
             console.log('INITIAL USER FILE CREATED.');
             loadUser(chatId, msg);
           });
+          addUserToAllUsers(chatId.toString());
+
         }
       });
     } else {
@@ -107,6 +157,19 @@ function checkState(user, msg) {
   handleDialog(user, msg);
 }
 
+function addUserToAllUsers(user){
+  console.log("ADDING USER "+user+" to allusers.json");
+  fs.readFile("data/allusers.json", function(err, data) {
+    if (err) throw err;
+    console.log("ALLUSERS.JSON LOADED:");
+    let allUsers = (JSON.parse(data));
+    allUsers.users.push(user);
+    fs.writeFile("data/allusers.json", JSON.stringify(allUsers), function(err) {
+      if (err) throw err;
+      console.log('ADDED USER TO ALL USERS');
+    });
+  });
+}
 
 function handleDialog(user, msg) {
   if (user.logging == true) {
@@ -155,7 +218,7 @@ function handleDialog(user, msg) {
         user.name = msg.text;
         user.step++;
         saveToUser(user);
-        bot.sendMessage(user.id, "Ok, " + user.name + " What's your age?",);
+        bot.sendMessage(user.id, "Ok, " + user.name + " What's your age?", );
         break;
 
       case 3:
@@ -167,6 +230,13 @@ function handleDialog(user, msg) {
 
       case 4:
         user.job = msg.text;
+        user.step++;
+        saveToUser(user);
+        bot.sendMessage(user.id, "We will ask you to answer one or more questions every evening before you go to bed. To know when to ask you we need to know when that is.",keyBoardBedtime);
+
+        break;
+      case 5:
+        user.bedtime = msg.text;
         user.step++;
         saveToUser(user);
         bot.sendMessage(user.id, "That was it! You'll find a watch you can add to your homescreen at www.tobens.com/clock");
@@ -193,4 +263,11 @@ function saveToUser(user) {
     if (err) throw err;
     console.log('CHANGES SAVED TO USER FILE.');
   });
+}
+
+function addZero(i) {
+  if (i < 10) {
+    i = "0" + i;
+  }
+  return i;
 }
